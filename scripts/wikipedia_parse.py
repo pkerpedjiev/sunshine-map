@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+import collections as col
+import itertools as it
+import json
 import re
 import sys
 from optparse import OptionParser
@@ -15,9 +18,9 @@ def find_property(page, property_name):
     @return: The value of the property ('xcxc' in this example)
     '''
     # latitude degrees
-    match_lat = re.search('\|[ ]*{}[ ]*=(.*?)\|'.format(property_name), page)
+    match_lat = re.search('\|[ \t]*{}[\t ]*=(.*?)\|'.format(property_name), page)
     if match_lat is None:
-        return (None, None)
+        return None
     lat_deg_str = match_lat.groups(1)[0].strip()
 
     return lat_deg_str
@@ -30,14 +33,13 @@ def parse_longitude_latitude(page):
     @return: (lon, lat) as a tuple. None if they're not found
     '''
     if page.find('latd') >= 0:
-        #print page
         pass
 
     # latitude degrees
     try:
         latd = float(find_property(page, 'latd'))
         longd = float(find_property(page, 'longd'))
-    except ValueError:
+    except (ValueError,TypeError) as ex:
         return (None, None)
 
     # try for minutes
@@ -59,15 +61,71 @@ def parse_longitude_latitude(page):
     latd += latm / 60. + lats / 360.
     longd += longm / 60. + longs / 360.
 
+    '''
     print "latd", latd, 'latm', latm, 'lats', lats
     print "longd", longd, 'longm', longm, 'longs', longs
 
     print "lat_deg", latd, "longd", longd
     print "---------------------------------"
+    '''
 
     #lat = match_lat.groups(1).strip()
     #print "lat:", lat
-    return (None, None)
+    return (longd, latd)
+
+def parse_weather_box(page):
+    '''
+    Extract the text of a weather box from the page.
+
+    @param page: The page in question.
+    @return: A string containing the text of the weather box.
+    '''
+    match = re.search('(\{\{Weather box.*?\}\})', page)
+    if match is None:
+        return None
+
+    return match.groups(1)[0].strip()
+
+def parse_weather_stats(weather_box_str):
+    '''
+    Parse all of the weather stats from the
+    weather box.
+
+    @param weather_box_str: The text of the weather box
+    @return: A dictionary containing all of the statistics
+             in the weather box.
+    '''
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    stat_types = ['high C', 'mean C', 'low C', 'rain mm', 'precipitation mm', 
+             'snow cm', 'sun']
+
+    stats = col.defaultdict(dict)
+    for month, stat_type in it.product(months, stat_types):
+        found_stat = find_property(weather_box_str, 
+                                   month + " " + stat_type)
+
+        if found_stat is not None:
+            #replace weird long dash with a regular one
+            found_stat = found_stat.replace('\xe2\x88\x92', '-') 
+            stats[month][stat_type] = float(found_stat)
+
+    return stats
+
+def parse_title(page_text):
+    '''
+    Get the title of this page.
+
+    @param page_text: The text of this web page.
+    @return: The title of the page as enclosed in the <title></title> tags
+    '''
+    match = re.search('<title>(.*?)</title>', page_text)
+    
+    if match is None:
+        return None
+
+    return match.groups(1)[0].strip()
 
 def wikipedia_to_single_line_pages(f):
     '''
@@ -121,6 +179,25 @@ def main():
 
     for page in wikipedia_to_single_line_pages(f):
         lon, lat = parse_longitude_latitude(page)
+        population = find_property(page, 'population_total')
+
+        if lon is not None and lat is not None:
+            weatherbox = parse_weather_box(page)
+            if weatherbox is not None:
+                name = parse_title(page)
+                climate_stats = parse_weather_stats(weatherbox)
+
+                place_weather = {'name': name,
+                                 'lon': lon,
+                                 'lat': lat,
+                                 'climate': climate_stats }
+
+                print "population:", population
+                if population is not None:
+                    place_weather['population'] = int(population.replace(',', ''))
+
+                print json.dumps(place_weather)
+                
 
     f.close()
 

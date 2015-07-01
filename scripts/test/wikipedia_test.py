@@ -26,3 +26,15 @@ def test_wikipedia_to_single_line_pages():
     print >>sys.stderr, "lines:", lines
     print >>sys.stderr, "pages:", pages
     assert pages == ["<page>lineline2</page>", "<page>hi</page>", "<page>there</page>"]
+
+def test_find_property():
+    wikipedia_exerpt = """
+| country leader name               = 
+| population       = 31,572
+| population as of = Jan 1, 2009
+"""
+    text = "".join(wikipedia_exerpt.split('\n'))
+    print >>sys.stderr, "text:", text
+    
+    population = wp.find_property(text, 'population')
+    print >>sys.stderr, "population:", population
