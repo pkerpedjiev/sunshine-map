@@ -18,12 +18,29 @@ def find_property(page, property_name):
     @return: The value of the property ('xcxc' in this example)
     '''
     # latitude degrees
-    match_lat = re.search('\|[ \t]*{}[\t ]*=(.*?)\|'.format(property_name), page)
+    match_lat = re.search(r'\|[ \t]*{}[\t ]*=(.*?)[\|\{{\(&]'.format(property_name), page)
     if match_lat is None:
         return None
     lat_deg_str = match_lat.groups(1)[0].strip()
 
     return lat_deg_str
+
+def extract_numeric(property_value):
+    '''
+    Extract a number from a property.
+
+    So we extract 10 from something like '10sdfsd'
+
+    @param property_value: The value to extract the number from.
+    @return: The number in property_value. Return None if there's no
+    number present.
+    '''
+    match = re.search(r'([0-9]*)', property_value)
+    number = None
+    if match is not None:
+        number = float(match.groups(1)[0].strip())
+
+    return number
 
 def parse_longitude_latitude(page):
     '''
@@ -58,8 +75,21 @@ def parse_longitude_latitude(page):
         lats = 0
         longs = 0
 
+    try:
+        latns = find_property(page, 'latNS')
+        lonew = find_property(page, 'longEW')
+    except:
+        return (None, None)
+
     latd += latm / 60. + lats / 360.
     longd += longm / 60. + longs / 360.
+
+    if latns == 'S':
+        latd = -latd
+    if lonew == 'W':
+        longd = -longd
+
+    print >>sys.stderr, "lat, lon", latd, longd
 
     '''
     print "latd", latd, 'latm', latm, 'lats', lats
@@ -109,7 +139,10 @@ def parse_weather_stats(weather_box_str):
         if found_stat is not None:
             #replace weird long dash with a regular one
             found_stat = found_stat.replace('\xe2\x88\x92', '-') 
-            stats[month][stat_type] = float(found_stat)
+            try:
+                stats[month][stat_type] = float(found_stat)
+            except ValueError as ve:
+                print >> sys.stderr, "Faulty stat:", found_stat
 
     return stats
 
@@ -192,9 +225,11 @@ def main():
                                  'lat': lat,
                                  'climate': climate_stats }
 
-                print "population:", population
                 if population is not None:
-                    place_weather['population'] = int(population.replace(',', ''))
+                    try:
+                        place_weather['population'] = int(extract_numeric(population.replace(',', '').replace(' ', '')))
+                    except ValueError as ve:
+                        print >>sys.stderr, "faulty population:", population
 
                 print json.dumps(place_weather)
                 

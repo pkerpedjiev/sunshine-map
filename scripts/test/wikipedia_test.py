@@ -38,3 +38,25 @@ def test_find_property():
     
     population = wp.find_property(text, 'population')
     print >>sys.stderr, "population:", population
+
+def population_check(filename):
+    with open(filename, 'r') as f:
+        for page in wp.wikipedia_to_single_line_pages(f):
+            population = wp.find_property(page, 'population_total')
+            population = int(wp.extract_numeric(population.replace(',', '').replace(' ','')))
+            print >>sys.stderr, "population:",  population
+
+def test_find_population():
+    population_check('test/data/guatemala.wiki')
+    population_check('test/data/gdansk.wiki')
+    population_check('test/data/ithaca.wiki')
+    population_check('test/data/jerusalem.wiki')
+    population_check('test/data/lleida.wiki')
+    population_check('test/data/moncton.wiki')
+
+def test_latitude_longidue():
+    with open('test/data/ithaca.wiki', 'r') as f:
+        for page in wp.wikipedia_to_single_line_pages(f):
+            lat, lon = wp.parse_longitude_latitude(page)
+
+            print >>sys.stderr, "lat:", lat, "lon:", lon
