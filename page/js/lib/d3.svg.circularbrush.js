@@ -159,7 +159,6 @@ _brushG.selectAll("path.resize")
 		]
 
 
-        console.log('_newBrushData', _newBrushData);
 		_brushG
 			.selectAll("path.circularbrush")
 			.data(_newBrushData)

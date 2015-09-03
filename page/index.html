@@ -6,6 +6,10 @@
 
 @import url(/css/maps.css);
 
+img.leaflet-tile{
+        pointer-events: none;
+    }
+
 path {
   stroke-linejoin: round;
 }
@@ -83,14 +87,17 @@ path {
 
 <link rel="stylesheet" href="/css/leaflet.css">
 
+<script src="/js/lib/jquery.js"></script>
+<script src="/js/lib/underscore-min.js"></script>
+<script src="/js/lib/backbone.js"></script>
 <script src="/js/lib/d3.min.js"></script>
 <script src="/js/lib/queue.min.js"></script>
 <script src="/js/lib/topojson.v1.min.js"></script>
 <script src="/js/lib/d3.geo.voronoi.js"></script>
 <script src="/js/lib/d3.svg.circularbrush.js"></script>
-<script src="/js/lib/leaflet.js"></script>
+<script src="/js/lib/leaflet-src.js"></script>
 <script src="/js/lib/tile.stamen.js"></script>
-<script src="js/climate-map.js"></script>
+<script src="/js/climate-map.js"></script>
 <script>
 
 drawClimateMap('climate-map')

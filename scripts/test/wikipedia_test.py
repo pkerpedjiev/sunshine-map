@@ -1,3 +1,4 @@
+import json
 import sys
 import wikipedia_parse as wp
 
@@ -60,3 +61,17 @@ def test_latitude_longidue():
             lat, lon = wp.parse_longitude_latitude(page)
 
             print >>sys.stderr, "lat:", lat, "lon:", lon
+
+def test_astoria():
+
+    with open('test/data/astoria.wiki', 'r') as f:
+        for page in wp.wikipedia_to_single_line_pages(f):
+            weather_box = wp.parse_weather_for_page(page)
+            print >>sys.stderr, json.dumps(weather_box)
+
+def test_parse_weather_box():
+    with open('test/data/denver_weatherbox.wiki', 'r') as f:
+        for page in wp.wikipedia_to_single_line_pages(f):
+            weather_box = wp.parse_weather_box(page)
+            print >>sys.stderr, json.dumps(weather_box)
+
